@@ -6,3 +6,4 @@ geopandas
 SQLAlchemy
 GeoAlchemy2
 logging
+arcgis

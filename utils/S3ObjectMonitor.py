@@ -13,7 +13,7 @@ class S3ObjectMonitor:
         path: path to monitor: str e.g. "path/to/monitor/" (same path in all buckets)
         state_file: file to save the current state: str e.g. "path/state.json"
         last_run_file: file to save the last run: str e.g. "path/last_run.json"
-        file_type: file type to monitor: str e.g. ".shp"'''
+        file_type: file type to monitor: str or tuple e.g. ".shp", ("tiff","tif")'''
     def __init__(self, profile_name, buckets, path, state_file, last_run_file,file_type):
 
         self.profile_name = profile_name
@@ -57,6 +57,9 @@ class S3ObjectMonitor:
     def save_last_run(self):
        with open(self.last_run_file, 'w') as f:
            json.dump({"datetime":datetime.now(timezone.utc).isoformat()}, f)
+    
+    def get_s3_client(self):
+        return self.s3
     
     def monitor_objects(self):
         # Load the previous state
