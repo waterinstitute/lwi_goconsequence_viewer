@@ -6,4 +6,5 @@ geopandas
 SQLAlchemy
 GeoAlchemy2
 logging
+coloredlogs
 arcgis

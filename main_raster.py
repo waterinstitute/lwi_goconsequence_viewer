@@ -53,7 +53,7 @@ if __name__ == "__main__":
         
         #Deleting old elements    
         for removed in old_elements:
-            item_deleted = DeleteData(path=removed)
+            item_deleted = DeleteData(path=removed,s3=monitor.get_s3_client())
             item_deleted.execute()
     else:
         logging.info("No new elements to process")

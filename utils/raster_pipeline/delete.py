@@ -17,11 +17,12 @@ class DeleteData:
         self.path = path
         self.s3 = s3
         self.config_file = config_file
-        self._load_config(self.config_file)
+        
         self.s3_path = self._get_s3_path()
         self.service_name = (
-            self.path["Key"].split("/")[-1].replace(".tiff", "").replace(".tif", "")
+            self.path["Key"].split("/")[-1].replace(".tiff", "").replace(".tif", "").replace(".","_")
         )
+        self._load_config(self.config_file)
         self.region_int = self._get_region_int()
 
     def _load_config(self, config_file):
@@ -41,7 +42,7 @@ class DeleteData:
             self.input_service = (
                 self.serverUrl
                 + "/rest/services/"
-                + self.server_folder
+                + self.serverFolder
                 + "/"
                 + self.service_name
                 + "/MapServer"
@@ -51,6 +52,10 @@ class DeleteData:
         except FileNotFoundError:
             log.info("Credentials file not found")
             return None
+    
+    def _get_s3_path(self):
+        """Return the s3 path of the file to be processed"""
+        return f"s3://{self.path['Bucket']}/{self.path['Key']}"
 
     def remove_from_webmap(self, region_idx: int):
         try:
@@ -109,7 +114,7 @@ class DeleteData:
         """Execute the pipeline"""
         try:
             log.info(f"Removing {self.s3_path} from the webmap")
-            self.remove_from_webmap(self.region)
+            self.remove_from_webmap(self.region_int)
             log.info(f"Deleting cache for {self.s3_path}")
             self.delete_cache()
             log.info(f"Deleting service {self.input_service}")
