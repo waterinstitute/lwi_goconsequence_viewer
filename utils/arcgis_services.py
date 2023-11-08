@@ -71,3 +71,20 @@ def change_cache_dir (cache_dir:str, sddraftPath:str):
         doc.writexml(sddraft_file)
 
     print("cacheDir property updated.")
+    
+def share_options (SharetoOrganization: str, SharetoEveryone: str, SharetoGroup: str,  sddraftPath:str, GroupID=None):
+    docs = DOM.parse(sddraftPath)
+    key_list = docs.getElementsByTagName('Key')
+    value_list = docs.getElementsByTagName('Value')
+    for i in range(key_list.length):
+        if key_list[i].firstChild.nodeValue == "PackageUnderMyOrg":
+            value_list[i].firstChild.nodeValue = SharetoOrganization
+        if key_list[i].firstChild.nodeValue == "PackageIsPublic":
+            value_list[i].firstChild.nodeValue = SharetoEveryone
+        if key_list[i].firstChild.nodeValue == "PackageShareGroups":
+            value_list[i].firstChild.nodeValue = SharetoGroup
+        if SharetoGroup == "true" and key_list[i].firstChild.nodeValue == "PackageGroupIDs":
+            value_list[i].firstChild.nodeValue = GroupID
+    with open(sddraftPath, "w") as sddraft_file:
+        docs.writexml(sddraft_file)
+            
