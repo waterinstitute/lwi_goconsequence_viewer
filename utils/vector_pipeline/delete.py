@@ -61,9 +61,11 @@ class DeleteData:
         metadata = MetaData()
         results_table = Table(self.tables[0]['name'], metadata, autoload_with=self.engine)
         stmt = results_table.delete().where(results_table.c.path_aws==self.s3_path)
+        print(self.s3_path)
+        print(stmt)
         with self.engine.begin() as connection:
             connection.execute(stmt)
-            
+            connection.commit()
                 
     def execute(self)->bool:
         """Execute the pipeline"""
