@@ -44,14 +44,15 @@ if __name__ == "__main__":
     old_elements = modified_objects["removed"]
     if new_elements or old_elements:
 
+        #Deleting old elements    
+        for removed in old_elements:
+            item_deleted = DeleteData(path=removed)
+            item_deleted.execute()
+
         #Processing new elements
         for added in new_elements:
             item_to_add = AddData(path=added)
             item_to_add.execute()
         
-        #Deleting old elements    
-        for removed in old_elements:
-            item_deleted = DeleteData(path=removed)
-            item_deleted.execute()
     else:
         logging.info("No new elements to process")

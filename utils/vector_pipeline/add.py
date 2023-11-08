@@ -50,7 +50,7 @@ class AddData:
     def _read_source_data(self)->gpd.GeoDataFrame:
         """ Read the Structure inventory data from the database and return a geopandas dataframe"""
         sql = f"SELECT * FROM {self.tables[2]['name']}"
-        df = gpd.read_postgis(sql, self.engine,geom_col='shape')
+        df = gpd.read_postgis(sql, self.engine,geom_col='geometry')
         return df
     
     def _get_s3_path(self):
