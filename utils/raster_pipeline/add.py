@@ -7,7 +7,7 @@ import re
 import random
 from arcgis.mapping import WebMap
 from arcgis.gis import GIS
-from .. import configure_mapserver_capabilities, activate_cache, change_cache_dir
+from .. import configure_mapserver_capabilities, activate_cache, change_cache_dir, share_options
 
 log = logging.getLogger(__name__)
 coloredlogs.install(level='INFO')
@@ -43,7 +43,7 @@ class AddData:
         self.region = self._get_region()
         # Scales defined for each raster
         self.scales = (
-            "4622324.434309;2311162.217155;1155581.108577;577790.554289;288895.277144;"
+            "9244648.868618;4622324.434309;2311162.217155;1155581.108577;577790.554289;288895.277144;"
         )
         self.scales += (
             "144447.638572;72223.819286;36111.909643;18055.954822;9027.977411"
@@ -109,17 +109,17 @@ class AddData:
 
     def create_project(self):
         """Create a project in the temp folder, adding image and symbology to it"""
-        project = arcpy.mp.ArcGISProject(self.template)
+        project_temp = arcpy.mp.ArcGISProject(self.template)
         
-        m = project.listMaps()[0]
-        m.addDataFromPath(self.raster_path)
-        lyrs = [m.listLayers()[0]]
-        lyrs[0].name = lyrs[0].name.replace(".tiff", "").replace(".tif", "")
-        self.service_name = lyrs[0].name
+        m_temp = project_temp.listMaps()[0]
+        m_temp.addDataFromPath(self.raster_path)
+        lyrs_temp = [m_temp.listLayers()[0]]
+        lyrs_temp[0].name = lyrs_temp[0].name.replace(".tiff", "").replace(".tif", "")
+        self.service_name = lyrs_temp[0].name
         new_project_path = os.path.join(os.path.abspath(self.temp_path), f"{self.service_name}.aprx")
         print(self.service_name)
-        arcpy.ApplySymbologyFromLayer_management(lyrs[0], self.symbology)
-        project.saveACopy(new_project_path)
+        arcpy.ApplySymbologyFromLayer_management(lyrs_temp[0], self.symbology)
+        project_temp.saveACopy(new_project_path)
         ## Adding elements from the new project
         self.project = arcpy.mp.ArcGISProject(new_project_path)
         self.m = self.project.listMaps()[0]
@@ -153,6 +153,15 @@ class AddData:
         configure_mapserver_capabilities(self.sddraftPath, "Map")
         activate_cache(self.sddraftPath)
         change_cache_dir(cache_dir, self.sddraftPath)
+        # Change following to "true" to share
+        SharetoOrganization = "false"
+        SharetoEveryone = "true"
+        SharetoGroup = "false"
+        #if there are more than one Put the ID seaparated by commas
+        GroupID = ""
+        share_options(SharetoOrganization, SharetoEveryone, SharetoGroup, self.sddraftPath, GroupID)
+        
+
 
     def _get_region(self):
         """Get the region from the s3 path"""
@@ -176,6 +185,7 @@ class AddData:
             + self.service_name
             + "/MapServer"
         )
+        print(input_service)
 
         try:
             arcpy.server.StageService(
@@ -217,6 +227,8 @@ class AddData:
                 "itemId": layer_item.id,
                 "layerType": "ArcGISTiledMapServiceLayer",
             }
+            print(self.region)
+            print("-------Region------")
             region_idx = self.get_region_index(self.region, wm.layers)
             wm.layers[region_idx]["layers"].append(new_map_layer)
             wm.update()

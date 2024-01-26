@@ -45,15 +45,16 @@ if __name__ == "__main__":
     old_elements = modified_objects["removed"]
     print(new_elements,old_elements)
     if new_elements or old_elements:
-
-        #Processing new elements
-        for added in new_elements:
-            item_to_add = AddData(path=added,temp_path=_TEMP_PATH,s3=monitor.get_s3_client())
-            item_to_add.execute()
         
         #Deleting old elements    
         for removed in old_elements:
             item_deleted = DeleteData(path=removed,s3=monitor.get_s3_client())
             item_deleted.execute()
+        #Processing new elements
+        for added in new_elements:
+            item_to_add = AddData(path=added,temp_path=_TEMP_PATH,s3=monitor.get_s3_client())
+            item_to_add.execute()
+        
+        
     else:
         logging.info("No new elements to process")

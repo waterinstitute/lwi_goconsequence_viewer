@@ -89,7 +89,7 @@ class DeleteData:
             layer_item.delete()
             return True
         except Exception as e:
-            log.error(f"Error deleting {self.s3_path} from the server")
+            log.error(f"Error deleting {self.s3_path} from the webmap")
             log.error(e)
             return False
 
