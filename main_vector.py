@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from utils import S3ObjectMonitor
+from utils import S3ObjectMonitor, Report
 from utils.vector_pipeline import AddData, DeleteData
 import os
 os.environ['AWS_PROFILE'] = 'LWI'
@@ -48,11 +48,22 @@ if __name__ == "__main__":
         for removed in old_elements:
             item_deleted = DeleteData(path=removed)
             item_deleted.execute()
+            """regions = item_deleted.get_regions()
+            storm_id = item_deleted.get_storm_id()
+            for r in regions:
+                report = Report(r, storm_id)
+                report.delete()"""
 
         #Processing new elements
         for added in new_elements:
             item_to_add = AddData(path=added)
             item_to_add.execute()
+            regions = item_to_add.get_regions()
+            storm_id = item_to_add.get_storm_id()
+            for r in regions:
+                report = Report(r, storm_id)
+                report.generate()
+            
         
     else:
         logging.info("No new elements to process")

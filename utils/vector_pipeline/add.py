@@ -18,6 +18,9 @@ class AddData:
         self._load_config(self.config_file)
         self.s3_path = self._get_s3_path()
         self.data = self._read_data()
+        self.regions_id= self.__get_regions(self.data)
+        self.storm_name=self.__get_storm_name()
+        self.storm_id=self.__insert_storm_name()
         
     def _load_config(self,config_file):
         """Load the database credentials from the yaml file
@@ -46,16 +49,30 @@ class AddData:
         gdf = gpd.read_file(self.s3_path)
         if gdf.crs is None or gdf.crs.to_epsg() != 4326:
             raise ValueError("Shapefile does not have CRS EPSG:4326")
+        log.info(f"Finished loading {self.s3_path}")
         return gdf
     def _read_source_data(self)->gpd.GeoDataFrame:
         """ Read the Structure inventory data from the database and return a geopandas dataframe"""
         sql = f"SELECT * FROM {self.tables[2]['name']}"
-        df = gpd.read_postgis(sql, self.engine,geom_col='geometry')
+        df = gpd.read_postgis(sql, self.engine,geom_col='shape')
         return df
     
     def _get_s3_path(self):
         """Return the s3 path of the file to be processed"""
         return f"s3://{self.path['Bucket']}/{self.path['Key']}"
+    
+    def __get_regions(self,result_data):
+        """Return the region id"""
+        result_data.to_crs(3857,inplace=True)
+        sql = f"SELECT * FROM {self.tables[3]['name']}"
+        regions = gpd.read_postgis(sql, self.engine,geom_col='shape')
+        region_ids = gpd.overlay(result_data, regions, how='intersection')['region_watershed'].unique()
+        log.info(f"Region ids: {region_ids}")
+        return region_ids
+    
+    def get_regions(self):
+        """Return the region id"""
+        return self.regions_id
     
     def get_data(self):
         "Method to view the raw data"
@@ -94,22 +111,31 @@ class AddData:
         self.data['fd_id'] = self.data['fd_id'].astype(int)
         self.data = gpd.GeoDataFrame(self.data.merge(source_data,on='fd_id',how='left',suffixes=(None, '_y')))
         self.data['depth_above_ff'] = self.data['depth'] - self.data['found_ht']
-        self.data['storm_id'] = self.insert_storm_name()
+        self.data['storm_id'] = self.storm_id
         self.data['gdb_geomattr_data'] = np.nan
         self.data['total_damage'] = self.data['content_da'] + self.data['structure']
         self.data['path_aws'] = self.s3_path
         self.data['occupancy_str'] = self.data['occupancy'].apply(self.extract_occupancy)
         self.data['damage_cat_str'] = self.data['damage_cat'].apply(self.extract_damage_category)
         self.data=self.data.loc[self.data['total_damage']>0]
+        log.info(self.data.columns)
         self.data.set_geometry('shape',inplace=True)
         self.data.to_crs(3857,inplace=True)
         return self.data[columns]
         
-    def get_storm_name(self)->str:
+    def __get_storm_name(self)->str:
         """Return the storm name from the s3 path"""
         filename = self.path['Key'].split("/")[-1]
-        storm_name = filename.split("_")[:2]
-        return "_".join(storm_name)
+        name = filename.split("_")
+        if len(name)<=10:
+            storm_name = name[2]
+        else:
+            storm_name = ", ".join([name[2],name[7]])
+        return storm_name
+    
+    def get_storm_name(self):
+        """Return the storm name"""
+        return self.storm_name
     
     def extract_occupancy(self,occ_type:str)->str:
         """Extract the occupancy type from the occ_type column"""
@@ -178,24 +204,29 @@ class AddData:
             damage_category = "Unknown"
         return damage_category
     
-    def insert_storm_name(self)->int:
+    def __insert_storm_name(self)->int:
         """Insert the storm name into the database and return the storm_id"""
-        sql_insert = f"INSERT INTO {self.tables[1]['name']} (storm) VALUES ('{self.get_storm_name()}')"
-        sql_select=f"SELECT storm_id FROM {self.tables[1]['name']} WHERE storm='{self.get_storm_name()}'"
+        sql_insert = f"INSERT INTO {self.tables[1]['name']} (storm) VALUES ('{self.storm_name}')"
+        sql_select=f"SELECT storm_id FROM {self.tables[1]['name']} WHERE storm='{self.storm_name}'"
         cursor = self.connection.cursor()
         cursor.execute(sql_select)
         storm_id = cursor.fetchone()
         if storm_id:
             self.connection.commit()
             cursor.close()
-            return int(storm_id[0])
+            storm_id = int(storm_id[0])
         else: 
             cursor.execute(sql_insert)
             self.connection.commit()
             cursor.execute(sql_select)
-            storm_id = cursor.fetchone()[0]
+            storm_id_val = cursor.fetchone()[0]
             cursor.close()
-            return int(storm_id)
+            storm_id = int(storm_id_val)
+        return storm_id
+    
+    def get_storm_id (self)->int:
+        """Return the storm_id"""
+        return self.storm_id
         
         
     def clean_storm_data(self):

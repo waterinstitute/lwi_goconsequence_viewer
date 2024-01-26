@@ -36,6 +36,11 @@ class S3ObjectMonitor:
         
     # Function to save the current state to a file
     def save_state(self,state):
+       import datetime 
+
+       data = self.load_state()
+       with open(f"{self.state_file[:-5]}_{datetime.datetime.now().strftime('%Y_%m_%d_%H%M%S')}.json", 'w') as f:
+           json.dump(data, f)
        with open(self.state_file, 'w') as f:
            json.dump(state, f)
     

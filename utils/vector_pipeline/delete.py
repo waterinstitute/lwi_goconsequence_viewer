@@ -16,6 +16,8 @@ class DeleteData:
         self.config_file = config_file
         self._load_config(self.config_file)
         self.s3_path = self._get_s3_path()
+        self.storm_id= self.__get_storm_id()
+        self.regions = self.__get_regions()
 
         
     def _load_config(self,config_file):
@@ -66,6 +68,33 @@ class DeleteData:
         with self.engine.begin() as connection:
             connection.execute(stmt)
             connection.commit()
+            
+    def __get_storm_id(self):
+        """Get the storm id from the results table"""
+        sql_select = f"SELECT DISTINCT storm_id FROM {self.tables[0]['name']} WHERE path_aws='{self.s3_path}'"
+        cursor = self.connection.cursor()
+        cursor.execute(sql_select)
+        storm_id = cursor.fetchone()[0]
+        cursor.close()
+        return storm_id
+    
+    def get_storm_id(self):
+        """Return the storm id"""
+        return self.storm_id
+    
+    def __get_regions(self):
+        """Get the regions from the results table"""
+        sql_select = f"SELECT * FROM {self.tables[0]['name']} WHERE path_aws='{self.s3_path}'"
+        si_to_delete = gpd.read_postgis(sql_select, self.engine,geom_col='shape')
+        sql = f"SELECT * FROM region"
+        regions = gpd.read_postgis(sql, self.engine,geom_col='shape')
+        region_ids = gpd.overlay(si_to_delete, regions, how='intersection')['region_watershed'].unique()
+        log.info(f"Region ids: {region_ids}")
+        return region_ids
+    
+    def get_regions(self):
+        """Return the regions"""
+        return self.regions
                 
     def execute(self)->bool:
         """Execute the pipeline"""
