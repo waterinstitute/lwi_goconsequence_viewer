@@ -214,24 +214,26 @@ class AddData:
             gis = GIS(
                 self.portalUrl, self.portalUser, self.portalPass, verify_cert=True
             )
-            itemID = gis.content.search(self.webmapName, item_type="Web Map")[0].id
-            item = gis.content.get(itemID)
-            wm = WebMap(item)
-            layer_id = gis.content.search(self.service_name)[0].id
-            layer_item = gis.content.get(layer_id)
-            new_map_layer = {
-                "id": self.create_layer_id(random.randint(100, 99999)),
-                "url": layer_item.url,
-                "title": layer_item.layers[0].properties.name,
-                "visibility": False,
-                "itemId": layer_item.id,
-                "layerType": "ArcGISTiledMapServiceLayer",
-            }
-            print(self.region)
-            print("-------Region------")
-            region_idx = self.get_region_index(self.region, wm.layers)
-            wm.layers[region_idx]["layers"].append(new_map_layer)
-            wm.update()
+            
+            for item_s in gis.content.search(self.webmapName, item_type="Web Map"):
+                print(f"Working on {item_s.title} webmap")
+                item = gis.content.get(item_s.id)
+                wm = WebMap(item)
+                layer_id = gis.content.search(self.service_name)[0].id
+                layer_item = gis.content.get(layer_id)
+                new_map_layer = {
+                    "id": self.create_layer_id(random.randint(100, 99999)),
+                    "url": layer_item.url,
+                    "title": layer_item.layers[0].properties.name,
+                    "visibility": False,
+                    "itemId": layer_item.id,
+                    "layerType": "ArcGISTiledMapServiceLayer",
+                }
+                print(self.region)
+                print("-------Region------")
+                region_idx = self.get_region_index(self.region, wm.layers)
+                wm.layers[region_idx]["layers"].append(new_map_layer)
+                wm.update()
             return True
         except Exception as e:
             log.error(f" Error adding {self.s3_path} to the webmap")
