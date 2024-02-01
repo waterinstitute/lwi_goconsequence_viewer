@@ -48,11 +48,11 @@ if __name__ == "__main__":
         for removed in old_elements:
             item_deleted = DeleteData(path=removed)
             item_deleted.execute()
-            """regions = item_deleted.get_regions()
+            regions = item_deleted.get_regions()
             storm_id = item_deleted.get_storm_id()
             for r in regions:
                 report = Report(r, storm_id)
-                report.delete()"""
+                report.delete()
 
         #Processing new elements
         for added in new_elements:

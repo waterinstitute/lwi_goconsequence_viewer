@@ -118,7 +118,6 @@ class AddData:
         self.data['occupancy_str'] = self.data['occupancy'].apply(self.extract_occupancy)
         self.data['damage_cat_str'] = self.data['damage_cat'].apply(self.extract_damage_category)
         self.data=self.data.loc[self.data['total_damage']>0]
-        log.info(self.data.columns)
         self.data.set_geometry('shape',inplace=True)
         self.data.to_crs(3857,inplace=True)
         return self.data[columns]
