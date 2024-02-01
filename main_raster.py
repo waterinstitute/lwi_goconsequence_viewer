@@ -25,7 +25,7 @@ _DEFAULT_BUCKETS = {
     "DEV":["lwi-common"]
 }
 _DEFAULT_PATHS = {
-    "PROD":"deliverables/consequence_modeling_results/goconsequence_results_shp/",
+    "PROD":"deliverables/consequence_modeling_results/depth_tiff/",
     "DEV":"staging/wsel_test/"
 }
 _BUCKETS = _DEFAULT_BUCKETS[_MODE]
