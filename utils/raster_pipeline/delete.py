@@ -64,14 +64,17 @@ class DeleteData:
                 self.portalUrl, self.portalUser, self.portalPass, verify_cert=True
             )
             itemID = self.gis.content.search(self.webmapName, item_type="Web Map")[0].id
+            log.info(f"Webmap ID {itemID}")
             item = self.gis.content.get(itemID)
             wm = WebMap(item)
-
+            if region_idx == 0:
+                region_idx = -1
             layers = list(wm.layers[region_idx].layers)
             idx = None
             for i, dictionary in enumerate(layers):
                 if dictionary.get("title") == self.service_name:
                     idx = i
+            log.info(f"layer to remove has the index {idx}")
             if idx is not None:
                 layers.remove(layers[idx])
                 wm.layers[region_idx].layers = [] if len(layers) == 0 else layers

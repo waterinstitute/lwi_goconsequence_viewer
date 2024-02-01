@@ -7,7 +7,7 @@ import re
 import random
 from arcgis.mapping import WebMap
 from arcgis.gis import GIS
-from .. import configure_mapserver_capabilities, activate_cache, change_cache_dir, share_options
+from .. import configure_mapserver_capabilities, activate_cache, change_cache_dir, share_options, edit_scales
 
 log = logging.getLogger(__name__)
 coloredlogs.install(level='INFO')
@@ -28,6 +28,8 @@ class AddData:
         self.config_file = config_file
         self._load_config(self.config_file)
         self.s3_path = self._get_s3_path()
+        self.min_scale = "9244648.868618"
+        self.max_scale = "9027.977411"
         package_directory = os.path.dirname(os.path.abspath(__file__))
         self.template = os.path.join(
             package_directory, "../../static/arcgis_resources/lwi_template.aprx"
@@ -37,9 +39,6 @@ class AddData:
         )
         self.raster_path = self._download_raster()
         #self.raster_path = "/home/arcgis/lwi_goconsequence_viewer/temp/August_WSE_Lan_ProjectRaster.tif"
-        print(package_directory)
-        print(self.template)
-        print(self.symbology)
         self.region = self._get_region()
         # Scales defined for each raster
         self.scales = (
@@ -84,25 +83,25 @@ class AddData:
         temp_full_path = os.path.abspath(self.temp_path)
         try:
             self.s3.download_file(self.path["Bucket"], self.path["Key"], local_path)
-        except Exception as e:
+        except (OSError, Exception) as e:
             log.error(f" Error downloading {self.s3_path}")
             log.error(e)
             return False
-        out_coor_system = arcpy.Describe(local_path).spatialReference
+        out_coor_system = arcpy.Describe(os.path.abspath(local_path)).spatialReference
         if out_coor_system.factoryCode != 3857:
             log.info(f" Projecting {self.s3_path} to 3857")
             sr = arcpy.SpatialReference(3857)
             new_path = re.sub(r"\.(tif|tiff)$", r"_proj.\1", local_path)
-            print(new_path)
-            print(os.path.abspath(new_path))
             arcpy.ProjectRaster_management(
                 local_path, os.path.abspath(new_path), sr
             )
+            print(local_path)
             os.remove(local_path)
             files = [f for f in os.listdir(temp_full_path)]
             for f in files:
                 source_file = os.path.join(temp_full_path, f)
                 destination_file = os.path.join(temp_full_path, f.replace("_proj", ""))
+                print(destination_file)
                 os.rename(source_file, destination_file)
             log.info(f" {self.s3_path} projected to 3857")
         return os.path.abspath(local_path)
@@ -160,6 +159,7 @@ class AddData:
         #if there are more than one Put the ID seaparated by commas
         GroupID = ""
         share_options(SharetoOrganization, SharetoEveryone, SharetoGroup, self.sddraftPath, GroupID)
+        edit_scales(self.sddraftPath, self.min_scale, self.max_scale)
         
 
 

@@ -87,4 +87,30 @@ def share_options (SharetoOrganization: str, SharetoEveryone: str, SharetoGroup:
             value_list[i].firstChild.nodeValue = GroupID
     with open(sddraftPath, "w") as sddraft_file:
         docs.writexml(sddraft_file)
-            
+
+def edit_scales(ssdraftPath,minScale,maxScale):
+    doc = DOM.parse(ssdraftPath)
+    iteminfo = doc.getElementsByTagName('ItemInfo')
+    item_info=iteminfo.item(0)
+    configProps = doc.getElementsByTagName('ConfigurationProperties')[0]
+    propArray = configProps.firstChild
+    propSets = propArray.childNodes
+    for propSet in propSets:
+        keyValues = propSet.childNodes
+        for keyValue in keyValues:
+            if keyValue.tagName == 'Key':
+                if keyValue.firstChild.data == "minScale":
+                    keyValue.nextSibling.firstChild.data = minScale
+                if keyValue.firstChild.data == "maxScale":
+                    keyValue.nextSibling.firstChild.data = maxScale
+                    
+    min_scale_element = item_info.getElementsByTagName('MinScale')[0]
+    max_scale_element = item_info.getElementsByTagName('MaxScale')[0]
+
+    # Update the values
+    min_scale_element.firstChild.nodeValue = minScale
+    max_scale_element.firstChild.nodeValue = maxScale
+    # update sddraft file
+    f = open(ssdraftPath, 'w')
+    doc.writexml(f)
+    f.close()
