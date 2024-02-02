@@ -125,11 +125,13 @@ class AddData:
     def __get_storm_name(self)->str:
         """Return the storm name from the s3 path"""
         filename = self.path['Key'].split("/")[-1]
-        name = filename.split("_")
+        name = filename.replace(" ","").split("_")
+        log.info(f"Storm name: {name}")
+        log.info(f"Storm name length: {len(name)}")
         if len(name)<=10:
             storm_name = name[2]
         else:
-            storm_name = ", ".join([name[2],name[7]])
+            storm_name = ", ".join([name[3],name[8]])
         return storm_name
     
     def get_storm_name(self):
