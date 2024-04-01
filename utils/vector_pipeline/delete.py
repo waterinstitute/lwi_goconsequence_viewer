@@ -1,6 +1,6 @@
 import yaml
 import geopandas as gpd
-from sqlalchemy import create_engine, MetaData, Table
+from sqlalchemy import create_engine, MetaData, Table, text
 import logging
 from .. import get_db_connection
 
@@ -63,8 +63,8 @@ class DeleteData:
         metadata = MetaData()
         results_table = Table(self.tables[0]['name'], metadata, autoload_with=self.engine)
         stmt = results_table.delete().where(results_table.c.path_aws==self.s3_path)
-        print(self.s3_path)
-        print(stmt)
+        log.info(self.s3_path)
+        log.info(stmt)
         with self.engine.begin() as connection:
             connection.execute(stmt)
             connection.commit()
@@ -84,10 +84,12 @@ class DeleteData:
     
     def __get_regions(self):
         """Get the regions from the results table"""
-        sql_select = f"SELECT * FROM {self.tables[0]['name']} WHERE path_aws='{self.s3_path}'"
-        si_to_delete = gpd.read_postgis(sql_select, self.engine,geom_col='shape')
-        sql = f"SELECT * FROM region"
-        regions = gpd.read_postgis(sql, self.engine,geom_col='shape')
+        with self.engine.connect() as conn:
+            sql_select = text(f"SELECT * FROM {self.tables[0]['name']} WHERE path_aws='{self.s3_path}'")
+            log.info(sql_select)
+            si_to_delete = gpd.read_postgis(sql_select, conn,geom_col='shape')
+            sql = text("SELECT * FROM region")
+            regions = gpd.read_postgis(sql, conn,geom_col='shape')
         region_ids = gpd.overlay(si_to_delete, regions, how='intersection')['region_watershed'].unique()
         log.info(f"Region ids: {region_ids}")
         return region_ids

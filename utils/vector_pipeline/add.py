@@ -2,7 +2,7 @@ import yaml
 import geopandas as gpd
 import numpy as np
 import psycopg2
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import logging
 from .. import get_db_connection
 
@@ -53,8 +53,9 @@ class AddData:
         return gdf
     def _read_source_data(self)->gpd.GeoDataFrame:
         """ Read the Structure inventory data from the database and return a geopandas dataframe"""
-        sql = f"SELECT * FROM {self.tables[2]['name']}"
-        df = gpd.read_postgis(sql, self.engine,geom_col='shape')
+        with self.engine.connect() as conn:
+            sql = text(f"SELECT * FROM {self.tables[2]['name']}")
+            df = gpd.read_postgis(sql, conn,geom_col='shape')
         return df
     
     def _get_s3_path(self):
@@ -64,9 +65,10 @@ class AddData:
     def __get_regions(self,result_data):
         """Return the region id"""
         result_data.to_crs(3857,inplace=True)
-        sql = f"SELECT * FROM {self.tables[3]['name']}"
-        regions = gpd.read_postgis(sql, self.engine,geom_col='shape')
-        region_ids = gpd.overlay(result_data, regions, how='intersection')['region_watershed'].unique()
+        sql = text(f"SELECT * FROM {self.tables[3]['name']}")
+        with self.engine.connect() as conn:
+            regions = gpd.read_postgis(sql, conn,geom_col='shape')
+            region_ids = gpd.overlay(result_data, regions, how='intersection')['region_watershed'].unique()
         log.info(f"Region ids: {region_ids}")
         return region_ids
     
@@ -109,6 +111,8 @@ class AddData:
         source_data['fd_id'] = source_data['fd_id'].astype(int)
         source_data=source_data[['fd_id','found_ht']]
         self.data['fd_id'] = self.data['fd_id'].astype(int)
+        self.data['content_da'] = self.data['content_da'].round(-3)
+        self.data['structure'] = self.data['structure'].round(-3)
         self.data = gpd.GeoDataFrame(self.data.merge(source_data,on='fd_id',how='left',suffixes=(None, '_y')))
         self.data['depth_above_ff'] = self.data['depth'] - self.data['found_ht']
         self.data['storm_id'] = self.storm_id
