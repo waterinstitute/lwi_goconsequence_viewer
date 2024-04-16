@@ -19,8 +19,14 @@ class AddData:
         self.s3_path = self._get_s3_path()
         self.data = self._read_data()
         self.regions_id= self.__get_regions(self.data)
-        self.storm_name=self.__get_storm_name()
-        self.storm_id=self.__insert_storm_name()
+        storm_data=self.__get_storm_name()
+        if storm_data is None:
+            print("Tropical and Nontropical storms are not supported")
+            return None
+        else: 
+            self.storm_name = storm_data['storm_name']
+            self.storm_event_type = storm_data['event_type']
+        self.storm_id=self.__insert_event()
         
     def _load_config(self,config_file):
         """Load the database credentials from the yaml file
@@ -132,11 +138,25 @@ class AddData:
         name = filename.replace(" ","").split("_")
         log.info(f"Storm name: {name}")
         log.info(f"Storm name length: {len(name)}")
-        if len(name)<=10:
-            storm_name = name[2]
+        if len(name)>=12:
+            storm_name = name[2] #name[7]
+            #frequency = name[2]
+            event_type= 1
         else:
-            storm_name = ", ".join([name[3],name[8]])
-        return storm_name
+            if name[1] == "CMB":
+                storm_name = name[3]  ##f"{name[1]}, {name[2]}"
+                #frequency = name[3]
+                event_type = 3
+            elif name[1] in ["nTC","TC"]:
+                return None
+            else:
+                storm_name = name[2]
+                #frequency = "N.A."
+                event_type = 2
+        return {
+            "storm_name":storm_name,
+            "event_type":event_type
+        }
     
     def get_storm_name(self):
         """Return the storm name"""
@@ -209,43 +229,59 @@ class AddData:
             damage_category = "Unknown"
         return damage_category
     
-    def __insert_storm_name(self)->int:
-        """Insert the storm name into the database and return the storm_id"""
-        sql_insert = f"INSERT INTO {self.tables[1]['name']} (storm) VALUES ('{self.storm_name}')"
-        sql_select=f"SELECT storm_id FROM {self.tables[1]['name']} WHERE storm='{self.storm_name}'"
+    def _check_and_insert_data(self,sql_select:str,sql_insert:str)->int:
+        """Check if the data exists in the databaseor insert the data"""
         cursor = self.connection.cursor()
         cursor.execute(sql_select)
-        storm_id = cursor.fetchone()
-        if storm_id:
+        row_id = cursor.fetchone()
+        if row_id:
             self.connection.commit()
             cursor.close()
-            storm_id = int(storm_id[0])
-        else: 
+            row_id = int(row_id[0])
+        else:
             cursor.execute(sql_insert)
             self.connection.commit()
             cursor.execute(sql_select)
-            storm_id_val = cursor.fetchone()[0]
+            row_id_val = cursor.fetchone()[0]
             cursor.close()
-            storm_id = int(storm_id_val)
+            row_id = int(row_id_val)
+        return row_id
+    
+    def __insert_event(self)->int:
+        """Insert the storm name into the database and return the storm_id"""
+        #sql_insert_frequency = f"INSERT INTO {self.tables[4]['name']} (event_type,frequency) VALUES ({self.storm_event_type},'{self.storm_frequency}')"
+        #sql_select_frequency = f"SELECT id FROM {self.tables[4]['name']} WHERE event_type={self.storm_event_type} and frequency='{self.storm_frequency}'"
+        ## Check if frequency and event type exists
+        #frequency_id = self._check_and_insert_data(sql_select_frequency,sql_insert_frequency)
+        sql_insert_storm = f"INSERT INTO {self.tables[1]['name']} (storm,event_type) VALUES ('{self.storm_name}',{self.storm_event_type})"
+        sql_select_storm=f"SELECT storm_id FROM {self.tables[1]['name']} WHERE storm='{self.storm_name}' AND event_type={self.storm_event_type}"
+        storm_id = self._check_and_insert_data(sql_select_storm,sql_insert_storm)
         return storm_id
+        
     
     def get_storm_id (self)->int:
         """Return the storm_id"""
         return self.storm_id
         
-        
-    def clean_storm_data(self):
-        """Delete storm names that are not related into the results table"""
-        sql_select=f"SELECT storm_id FROM {self.tables[1]['name']} WHERE storm_id not in (SELECT DISTINCT storm_id FROM {self.tables[0]['name']})"
+    def _delete_isolate_data(self, sql_select:str,table:str, field:str):
+        """Delete data that is not connected to the results table"""
         cursor = self.connection.cursor()
         cursor.execute(sql_select)
-        storm_ids = cursor.fetchall()
-        if storm_ids:
-            for storm_id in storm_ids:
-                sql_delete = f"DELETE FROM {self.tables[1]['name']} WHERE storm_id={storm_id[0]}"
+        ids = cursor.fetchall()
+        if ids:
+            for id in ids:
+                sql_delete = f"DELETE FROM {table} WHERE {field}={id[0]}"
                 cursor.execute(sql_delete)
             self.connection.commit()
             cursor.close()
+        return True
+    def clean_storm_data(self):
+        """Delete storm names that are not related into the results table"""
+        sql_select=f"SELECT storm_id FROM {self.tables[1]['name']} WHERE storm_id not in (SELECT DISTINCT storm_id FROM {self.tables[0]['name']})"
+        self._delete_isolate_data(sql_select,self.tables[1]['name'],'storm_id')
+        #sql_select_frequency=f"SELECT id FROM {self.tables[4]['name']} WHERE id not in (SELECT DISTINCT frequency_id FROM {self.tables[1]['name']})"
+        #self._delete_isolate_data(sql_select_frequency,self.tables[4]['name'],'id')
+        
     def save_data(self,processed_data:gpd.GeoDataFrame):
         """Save the processed data into the database"""
         try:
