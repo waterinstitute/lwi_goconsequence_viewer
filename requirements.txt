@@ -1,10 +1,8 @@
 boto3
-json
 pyyaml
 psycopg2
 geopandas
 SQLAlchemy
-GeoAlchemy2
 logging
 coloredlogs
 arcgis

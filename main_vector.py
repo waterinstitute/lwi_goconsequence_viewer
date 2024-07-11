@@ -17,13 +17,14 @@ file_handler.setFormatter(formatter)
 # Add the FileHandler to the root logger
 logging.getLogger('').addHandler(file_handler)
 
-_MODE = "DEV"
+_MODE = "PROD"
 _PROJECT = "LWI"
 
 _DEFAULT_BUCKETS = {
-    "PROD":[*[f"lwi-region{x}" for x in range(1, 8)]],
+    "PROD":[*[f"lwi-region{x}" for x in range(1, 10)]],
     "DEV":["lwi-common"]
 }
+
 _DEFAULT_PATHS = {
     "PROD":"deliverables/consequence_modeling_results/goconsequence_results_shp/",
     "DEV":"staging/wsel_test/"
