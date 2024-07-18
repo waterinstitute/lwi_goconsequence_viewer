@@ -1,4 +1,5 @@
-import logging,coloredlogs
+import logging
+import coloredlogs
 import os
 import arcpy
 import string
@@ -7,10 +8,17 @@ import re
 import random
 from arcgis.mapping import WebMap
 from arcgis.gis import GIS
-from .. import configure_mapserver_capabilities, activate_cache, change_cache_dir, share_options, edit_scales
+from .. import (
+    configure_mapserver_capabilities,
+    activate_cache,
+    change_cache_dir,
+    share_options,
+    edit_scales,
+)
 
 log = logging.getLogger(__name__)
-coloredlogs.install(level='INFO')
+coloredlogs.install(level="INFO")
+
 
 class AddData:
     def __init__(self, path, temp_path, s3, config_file="credentials.yaml"):
@@ -38,17 +46,14 @@ class AddData:
             package_directory, "../../static/arcgis_resources/raster.lyrx"
         )
         self.raster_path = self._download_raster()
-        #self.raster_path = "/home/arcgis/lwi_goconsequence_viewer/temp/August_WSE_Lan_ProjectRaster.tif"
         self.region = self._get_region()
         # Scales defined for each raster
-        self.scales = (
-            "9244648.868618;4622324.434309;2311162.217155;1155581.108577;577790.554289;288895.277144;"
-        )
+        self.scales = "9244648.868618;4622324.434309;2311162.217155;1155581.108577;577790.554289;288895.277144;"
         self.scales += (
             "144447.638572;72223.819286;36111.909643;18055.954822;9027.977411"
         )
 
-    def _load_config(self, config_file):
+    def _load_config(self, config_file: str) -> bool:
         """Load the portal credentials from the yaml file"""
         try:
             with open(config_file, "r") as f:
@@ -68,17 +73,17 @@ class AddData:
             log.info("Credentials file not found")
             return None
 
-    def _get_s3_path(self):
+    def _get_s3_path(self) -> str:
         """Return the s3 path of the file to be processed"""
         return f"s3://{self.path['Bucket']}/{self.path['Key']}"
 
-    def _download_raster(self):
+    def _download_raster(self) -> str:
         """Read the data from the s3 bucket and download a tif image
         if it has a projection different than 3857, it projects it to 3857
         return the path to the image"""
         log.info(f" Downloading {self.s3_path}")
-        pattern = r'\.(?!(tif|tiff))'
-        result = re.sub(pattern, '_', self.path["Key"].split("/")[-1])
+        pattern = r"\.(?!(tif|tiff))"
+        result = re.sub(pattern, "_", self.path["Key"].split("/")[-1])
         local_path = self.temp_path + result
         temp_full_path = os.path.abspath(self.temp_path)
         try:
@@ -92,45 +97,43 @@ class AddData:
             log.info(f" Projecting {self.s3_path} to 3857")
             sr = arcpy.SpatialReference(3857)
             new_path = re.sub(r"\.(tif|tiff)$", r"_proj.\1", local_path)
-            arcpy.ProjectRaster_management(
-                local_path, os.path.abspath(new_path), sr
-            )
-            print(local_path)
+            arcpy.ProjectRaster_management(local_path, os.path.abspath(new_path), sr)
             os.remove(local_path)
             files = [f for f in os.listdir(temp_full_path)]
             for f in files:
                 source_file = os.path.join(temp_full_path, f)
                 destination_file = os.path.join(temp_full_path, f.replace("_proj", ""))
-                print(destination_file)
                 os.rename(source_file, destination_file)
             log.info(f" {self.s3_path} projected to 3857")
         return os.path.abspath(local_path)
 
-    def create_project(self):
+    def create_project(self) -> str:
         """Create a project in the temp folder, adding image and symbology to it"""
         project_temp = arcpy.mp.ArcGISProject(self.template)
-        
+
         m_temp = project_temp.listMaps()[0]
         m_temp.addDataFromPath(self.raster_path)
         lyrs_temp = [m_temp.listLayers()[0]]
         lyrs_temp[0].name = lyrs_temp[0].name.replace(".tiff", "").replace(".tif", "")
         self.service_name = lyrs_temp[0].name
-        new_project_path = os.path.join(os.path.abspath(self.temp_path), f"{self.service_name}.aprx")
-        print(self.service_name)
+        new_project_path = os.path.join(
+            os.path.abspath(self.temp_path), f"{self.service_name}.aprx"
+        )
+        log.info(self.service_name)
         arcpy.ApplySymbologyFromLayer_management(lyrs_temp[0], self.symbology)
         project_temp.saveACopy(new_project_path)
         ## Adding elements from the new project
         self.project = arcpy.mp.ArcGISProject(new_project_path)
         self.m = self.project.listMaps()[0]
         self.lyrs = [self.m.listLayers()[0]]
-        
+
         return new_project_path
 
     def create_draft(self, cache_dir="/cloudStores/lwi_goconsequence_cache"):
+        """Create a draft for the raster service"""
         self.sddraftPath = os.path.abspath(
             os.path.join(self.temp_path, self.service_name + ".sddraft")
         )
-        print(self.sddraftPath)
         server_type = "FEDERATED_SERVER"
         sharing_draft = self.m.getWebLayerSharingDraft(
             server_type, "MAP_IMAGE", self.service_name, self.lyrs
@@ -156,27 +159,31 @@ class AddData:
         SharetoOrganization = "false"
         SharetoEveryone = "true"
         SharetoGroup = "false"
-        #if there are more than one Put the ID seaparated by commas
+        # if there are more than one Put the ID seaparated by commas
         GroupID = ""
-        share_options(SharetoOrganization, SharetoEveryone, SharetoGroup, self.sddraftPath, GroupID)
+        share_options(
+            SharetoOrganization,
+            SharetoEveryone,
+            SharetoGroup,
+            self.sddraftPath,
+            GroupID,
+        )
         edit_scales(self.sddraftPath, self.min_scale, self.max_scale)
-        
 
-
-    def _get_region(self):
+    def _get_region(self) -> str:
         """Get the region from the s3 path"""
         try:
-            region = int(self.path['Bucket'][-1])
+            region = int(self.path["Bucket"][-1])
         except ValueError:
             region = 0
 
         return f"Region {region}"
 
-    def publish_raster(self):
+    def publish_raster(self) -> None:
+        """Publish the raster service usig the dratf created"""
         self.sdPath = os.path.abspath(
             os.path.join(self.temp_path, self.service_name + ".sd")
         )
-        print(self.sdPath)
         input_service = (
             self.serverUrl
             + "/rest/services/"
@@ -185,7 +192,6 @@ class AddData:
             + self.service_name
             + "/MapServer"
         )
-        print(input_service)
 
         try:
             arcpy.server.StageService(
@@ -195,7 +201,7 @@ class AddData:
                 self.sdPath, self.serverUrl, in_public="PUBLIC"
             )
             warnings = arcpy.GetMessages(1)
-            print(warnings)
+            log.info(warnings)
 
         except Exception as stage_exception:
             log.error(
@@ -208,15 +214,15 @@ class AddData:
             input_service, self.scales, "RECREATE_ALL_TILES"
         )
 
-    def add_to_webmap(self):
+    def add_to_webmap(self) -> bool:
+        """Add the raster to the webmap"""
         try:
-            """Add the raster to the webmap"""
             gis = GIS(
                 self.portalUrl, self.portalUser, self.portalPass, verify_cert=True
             )
-            
+
             for item_s in gis.content.search(self.webmapName, item_type="Web Map"):
-                print(f"Working on {item_s.title} webmap")
+                log.info(f"Working on {item_s.title} webmap")
                 item = gis.content.get(item_s.id)
                 wm = WebMap(item)
                 layer_id = gis.content.search(self.service_name)[0].id
@@ -229,8 +235,8 @@ class AddData:
                     "itemId": layer_item.id,
                     "layerType": "ArcGISTiledMapServiceLayer",
                 }
-                print(self.region)
-                print("-------Region------")
+                log.info(self.region)
+                log.info("-------Region------")
                 region_idx = self.get_region_index(self.region, wm.layers)
                 wm.layers[region_idx]["layers"].append(new_map_layer)
                 wm.update()
@@ -240,19 +246,22 @@ class AddData:
             log.error(e)
             return False
 
-    def create_layer_id(self, layerIndex):
+    def create_layer_id(self, layerIndex: int) -> str:
+        """Create a layer id for the webmap"""
         return (
             "".join(random.choices(string.ascii_lowercase + string.digits, k=11))
             + "-layer-"
             + str(layerIndex)
         )
 
-    def get_region_index(self, region_name: str, layers):
+    def get_region_index(self, region_name: str, layers: list) -> int:
+        """Get the index of the region in the webmap"""
         for i, dictionary in enumerate(layers):
             if dictionary.get("title") == region_name:
                 return i
 
-    def clean_local(self):
+    def clean_local(self) -> None:
+        """Clean the local resources"""
         import shutil
 
         shutil.rmtree(self.temp_path)
@@ -263,7 +272,7 @@ class AddData:
         self.create_draft()
         try:
             log.info(f" Creating Project for {self.s3_path}")
-            
+
             log.info(f" Creating draft for {self.s3_path}")
             self.create_draft()
             log.info(f" Publishing {self.s3_path}")

@@ -6,3 +6,4 @@ SQLAlchemy
 logging
 coloredlogs
 arcgis
+moto
