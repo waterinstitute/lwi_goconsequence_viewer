@@ -1,5 +1,7 @@
 # Go-Consequences Dashboard Workflow
 
+**Project status: Active**
+
 This repo is intended to process the vector data coming from Go-Consequence to store it in a database and define the schema required by the ArcGIS dashboard. It also process raster data (Water Surface Elevation) to automatically read it from an S3 bucket and publish it using ArcGIS GIS Server as a tile map service.
 
 ## How to run the repository content
