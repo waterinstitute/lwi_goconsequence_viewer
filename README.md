@@ -2,7 +2,7 @@
 
 **Project status: Active**
 
-This repo is intended to process the vector data coming from Go-Consequence to store it in a database and define the schema required by the ArcGIS dashboard. It also process raster data (Water Surface Elevation) to automatically read it from an S3 bucket and publish it using ArcGIS GIS Server as a tile map service.
+This repo is intended to process the vector data coming from [Go-Consequence](https://github.com/USACE/go-consequences) to store it in a database and define the schema required by the ArcGIS dashboard. It also process raster data (Water Surface Elevation) to automatically read it from an S3 bucket and publish it using ArcGIS GIS Server as a tile map service.
 
 ## About the project
 The objective of the Louisiana Watershed Initiative (LWI) Go-Consequences Dashboard is to present the results of consequence modeling for: historic events; synthetic events derived from probabilistic combinations of rainfall intensity and duration; and in the coastal areas, annual exceedance probability (AEP) compound flood surfaces, all of which represent different flooding representations across Louisiana. Additionally, the dashboard offers an overlay of flood surfaces corresponding to the selected source and frequency or name, depending on the case, allowing the user not only to see graphical representations of damages, but also the flood depths and extents which drove them. The damage results are summarized based on census tracts, census block groups, and census blocks.  To get more information visit the [help guide](https://experience.arcgis.com/experience/eb850481af654087b2a2f07bd59ba7ed/page/Help/)
