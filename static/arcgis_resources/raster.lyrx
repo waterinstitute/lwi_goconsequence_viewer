@@ -1,15 +1,15 @@
 {
   "type" : "CIMLayerDocument",
-  "version" : "2.9.0",
-  "build" : 32739,
+  "version" : "3.3.0",
+  "build" : 52636,
   "layers" : [
-    "CIMPATH=map/p01_002yr_05m_depth_max_amite_dec15_tif.xml"
+    "CIMPATH=map/p01_002yr_05m_depth_max_amite_dec15_tif.json"
   ],
   "layerDefinitions" : [
     {
       "type" : "CIMRasterLayer",
       "name" : "p01_002yr_05m_Depth_Max_Amite_Dec15.tif",
-      "uRI" : "CIMPATH=map/p01_002yr_05m_depth_max_amite_dec15_tif.xml",
+      "uRI" : "CIMPATH=map/p01_002yr_05m_depth_max_amite_dec15_tif.json",
       "sourceModifiedTime" : {
         "type" : "TimeInstant"
       },
@@ -17,7 +17,7 @@
       "description" : "p01_002yr_05m_Depth_Max_Amite_Dec15.tif",
       "layerElevation" : {
         "type" : "CIMLayerElevationSurface",
-        "mapElevationID" : "{1A62F07E-44B7-41C7-9798-B10493E9E24F}"
+        "elevationSurfaceLayerURI" : "CIMPATH=map/ground.json"
       },
       "expanded" : true,
       "layerType" : "Operational",
@@ -26,7 +26,7 @@
       "displayCacheType" : "Permanent",
       "maxDisplayCacheAge" : 5,
       "showPopups" : true,
-      "serviceLayerID" : 0,
+      "serviceLayerID" : -1,
       "refreshRate" : -1,
       "refreshRateUnit" : "esriTimeUnitsSeconds",
       "blendingMode" : "Alpha",
@@ -234,7 +234,6 @@
           }
         },
         "field" : "Value",
-        "hillshadeZFactor" : 1,
         "minimumBreak" : 0.00099945068359375,
         "showInAscendingOrder" : true,
         "numberFormat" : {
@@ -248,13 +247,29 @@
       }
     }
   ],
-  "elevationSurfaces" : [
+  "rGBColorProfile" : "sRGB IEC61966-2.1",
+  "cMYKColorProfile" : "U.S. Web Coated (SWOP) v2",
+  "elevationSurfaceLayerDefinitions" : [
     {
-      "type" : "CIMMapElevationSurface",
-      "elevationMode" : "BaseGlobeSurface",
+      "type" : "CIMElevationSurfaceLayer",
       "name" : "Ground",
+      "uRI" : "CIMPATH=map/ground.json",
+      "useSourceMetadata" : true,
+      "description" : "Ground",
+      "expanded" : true,
+      "layerType" : "Operational",
+      "showLegends" : false,
+      "visibility" : true,
+      "displayCacheType" : "Permanent",
+      "maxDisplayCacheAge" : 5,
+      "showPopups" : true,
+      "serviceLayerID" : -1,
+      "refreshRate" : -1,
+      "refreshRateUnit" : "esriTimeUnitsSeconds",
+      "blendingMode" : "Alpha",
+      "allowDrapingOnIntegratedMesh" : true,
+      "elevationMode" : "BaseGlobeSurface",
       "verticalExaggeration" : 1,
-      "mapElevationID" : "{1A62F07E-44B7-41C7-9798-B10493E9E24F}",
       "color" : {
         "type" : "CIMRGBColor",
         "values" : [
@@ -264,11 +279,7 @@
           100
         ]
       },
-      "surfaceTINShadingMode" : "Smooth",
-      "visibility" : true,
-      "expanded" : true
+      "surfaceTINShadingMode" : "Smooth"
     }
-  ],
-  "rGBColorProfile" : "sRGB IEC61966-2.1",
-  "cMYKColorProfile" : "U.S. Web Coated (SWOP) v2"
+  ]
 }
