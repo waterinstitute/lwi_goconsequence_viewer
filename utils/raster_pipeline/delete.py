@@ -1,8 +1,7 @@
 import yaml
 import logging
 import arcpy
-from arcgis.mapping import WebMap
-from arcgis.gis import GIS
+
 
 log = logging.getLogger(__name__)
 
@@ -61,10 +60,12 @@ class DeleteData:
         return f"s3://{self.path['Bucket']}/{self.path['Key']}"
 
     def remove_from_webmap(self, region_idx: int) -> bool:
+        from arcgis.mapping import WebMap
+        from arcgis.gis import GIS
         try:
             """Remove the tile layer from the webmap"""
             self.gis = GIS(
-                self.portalUrl, self.portalUser, self.portalPass, verify_cert=True
+                self.portalUrl, self.portalUser, self.portalPass, verify_cert=False
             )
 
             for item_s in self.gis.content.search(self.webmapName, item_type="Web Map"):

@@ -6,8 +6,7 @@ import string
 import yaml
 import re
 import random
-from arcgis.mapping import WebMap
-from arcgis.gis import GIS
+
 from .. import (
     configure_mapserver_capabilities,
     activate_cache,
@@ -84,7 +83,7 @@ class AddData:
         log.info(f" Downloading {self.s3_path}")
         pattern = r"\.(?!(tif|tiff))"
         result = re.sub(pattern, "_", self.path["Key"].split("/")[-1])
-        local_path = self.temp_path + result
+        local_path = self.temp_path + result.replace("_maxdepth", "")
         temp_full_path = os.path.abspath(self.temp_path)
         try:
             self.s3.download_file(self.path["Bucket"], self.path["Key"], local_path)
@@ -195,7 +194,7 @@ class AddData:
 
         try:
             arcpy.server.StageService(
-                self.sddraftPath, self.sdPath, staging_version=209
+                self.sddraftPath, self.sdPath, staging_version=330
             )
             arcpy.server.UploadServiceDefinition(
                 self.sdPath, self.serverUrl, in_public="PUBLIC"
@@ -216,10 +215,13 @@ class AddData:
 
     def add_to_webmap(self) -> bool:
         """Add the raster to the webmap"""
+        from arcgis.mapping import WebMap
+        from arcgis.gis import GIS
         try:
             gis = GIS(
-                self.portalUrl, self.portalUser, self.portalPass, verify_cert=True
+                self.portalUrl, self.portalUser, self.portalPass, verify_cert=False
             )
+            print(gis.content.search(self.webmapName, item_type="Web Map"))
 
             for item_s in gis.content.search(self.webmapName, item_type="Web Map"):
                 log.info(f"Working on {item_s.title} webmap")
