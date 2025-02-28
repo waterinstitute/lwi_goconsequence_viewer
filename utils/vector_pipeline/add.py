@@ -165,21 +165,32 @@ class AddData:
         name = filename.replace(" ", "").split("_")
         log.info(f"Storm name: {name}")
         log.info(f"Storm name length: {len(name)}")
-        if len(name) >= 12:
-            storm_name = name[2]  # name[7]
-            # frequency = name[2]
-            event_type = 1
-        else:
-            if name[1] == "CMB":
-                storm_name = name[3]  ##f"{name[1]}, {name[2]}"
-                # frequency = name[3]
+        if len(name) == 14:
+            storm_name = f"{name[3]}_{name[6]}"
+            if name[2].lower() == "atlas14":
+                event_type = 2
+            else:
                 event_type = 3
+
+        elif len(name) == 10:
+            if name[2].lower() == "atlas14":
+                event_type = 2
+                storm_name = f"{name[3]}_{name[4]}"
+            else:
+                event_type = 1
+                storm_name = name[2]
+
+        else:
+            if name[1].lower() == "cmb":
+                storm_name = name[2]  ##f"{name[1]}, {name[2]}"
+                # frequency = name[3]
+                event_type = 4
             elif name[1] in ["nTC", "TC"]:
                 return None
             else:
                 storm_name = name[2]
                 # frequency = "N.A."
-                event_type = 2
+                event_type = 3
         return {"storm_name": storm_name, "event_type": event_type}
 
     def get_storm_name(self) -> str:
