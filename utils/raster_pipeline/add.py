@@ -83,7 +83,16 @@ class AddData:
         log.info(f" Downloading {self.s3_path}")
         pattern = r"\.(?!(tif|tiff))"
         result = re.sub(pattern, "_", self.path["Key"].split("/")[-1])
-        local_path = self.temp_path + result.replace("_maxdepth", "")
+        name_parts = result.split("_")
+        if len(name_parts)>7:
+            indexes = [0,1,2,3,6]
+            raster_parts = [name_parts[i] for i in indexes]
+            extension = name_parts[-1].split(".")[-1]
+            raster_name = f'{"_".join(raster_parts)}.{extension}'
+            log.info(f"Raster name shorten from {result} to {raster_name}")
+        else:
+            raster_name = result
+        local_path = self.temp_path + raster_name
         temp_full_path = os.path.abspath(self.temp_path)
         try:
             self.s3.download_file(self.path["Bucket"], self.path["Key"], local_path)
@@ -104,6 +113,7 @@ class AddData:
                 destination_file = os.path.join(temp_full_path, f.replace("_proj", ""))
                 os.rename(source_file, destination_file)
             log.info(f" {self.s3_path} projected to 3857")
+        log.info(local_path)
         return os.path.abspath(local_path)
 
     def create_project(self) -> str:
@@ -270,19 +280,19 @@ class AddData:
 
     def execute(self) -> bool:
         """Execute the pipeline"""
-        self.create_project()
-        self.create_draft()
+        
+
         try:
             log.info(f" Creating Project for {self.s3_path}")
-
+            self.create_project()
             log.info(f" Creating draft for {self.s3_path}")
             self.create_draft()
             log.info(f" Publishing {self.s3_path}")
             self.publish_raster()
             log.info(f" Adding {self.s3_path} to webmap")
-            self.add_to_webmap()
+            #self.add_to_webmap()
             log.info(f" Cleaning local resources for {self.s3_path}")
-            self.clean_local()
+            #self.clean_local()
             log.info(f" Finished processing {self.s3_path}")
             return True
         except Exception as e:
